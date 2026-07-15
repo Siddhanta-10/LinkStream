@@ -7,8 +7,9 @@ struct SongNode
     int duration; // in seconds
 
     SongNode* next;
+    SongNode* prev;
 
-    SongNode(std::string title, int duration) : title(title), duration(duration), next(nullptr)
+    SongNode(std::string title, int duration) : title(title), duration(duration), next(nullptr), prev(nullptr)
     {
 
     }
@@ -21,10 +22,23 @@ class LinkStream
         SongNode* tail; // Points to the last song
 
     public:
-        // Constructor initializes an empty playlist
+        // Initializes an empty playlist
         LinkStream(){
             head = nullptr;
             tail = nullptr;
+        }
+
+        // Clear everything after app is closed
+        ~LinkStream(){
+            SongNode* current = head;
+
+            while(current != nullptr){
+                SongNode* nextNode = current->next;
+                delete current;
+                current = nextNode;
+            }
+
+            std::cout<< "Engine shut down. All memory freed." << std::endl;
         }
 
         void addSong(std::string title, int duration){
@@ -41,7 +55,8 @@ class LinkStream
             else{
                 // We need to add this new song to the end of the line.
                 tail->next = newSong; // The old last song now points to the new song
-                tail = newSong;       // Update the tail pointer to the new end of the line
+                newSong->prev = tail; // New song reaches backward
+                tail = newSong;       // Move the tail marker
             }
             std::cout<< "Added: "<< title << " to the queue"<< std::endl;
         }
@@ -87,6 +102,10 @@ class LinkStream
                 if(head == nullptr){
                     tail = nullptr;
                 }
+                else
+                {
+                    head->prev = nullptr;
+                }
             }
             // 4. Middle or Tail deletion
             else{
@@ -96,11 +115,37 @@ class LinkStream
                 if(current == tail){
                     tail = previous;
                 }
+                else
+                {
+                    current->next->prev = previous;
+                }
             }
 
             // 5. Actually destroy the song in memory
             delete current;
             std::cout<< "Removed: "<< targetTitle << std::endl;
+        }
+
+        void enableLoop(){
+            if(head == nullptr){
+                return;
+            }
+
+            tail->next = head;
+            head->prev = tail;
+
+            std::cout<< "Playlist loop enabled." << std::endl;
+        }
+
+        void diableLoop(){
+            if(head == nullptr){
+                return;
+            }
+
+            tail->next = nullptr;
+            head->prev = nullptr;
+
+            std::cout<< "Playlist loop disabled." << std::endl;
         }
 
         void printQueue(){
@@ -122,6 +167,22 @@ class LinkStream
             }
 
         }
+
+        void printReverseQueue(){
+            if(tail == nullptr){
+                std::cout<< "The queue is empty."<<std::endl;
+                return;
+            }
+
+            std::cout<< "Current queue in reverse order."<< std::endl;
+
+            SongNode* current = tail;
+
+            while(current != nullptr){
+                std::cout<<"- "<< current->title << " ("<< current->duration << "s)"<< std::endl;
+                current = current->prev;
+            }
+        }
 };
 
 int main()
@@ -137,6 +198,7 @@ int main()
 
     // Print out the list
     streamer.printQueue();
+    streamer.printReverseQueue();
 
     return 0;
 }
